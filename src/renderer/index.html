@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Assistant</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="bar">
+      <div id="messages" aria-live="polite"></div>
+
+      <section id="confirm" hidden>
+        <p id="confirm-text"></p>
+        <div class="row">
+          <button id="confirm-no" type="button">Recusar</button>
+          <button id="confirm-yes" type="button" class="primary">Permitir</button>
+        </div>
+      </section>
+
+      <section id="settings" hidden>
+        <label>Provedor <select id="set-provider"></select></label>
+        <label>Modelo <input id="set-model" type="text" spellcheck="false" /></label>
+        <label id="row-key">Chave de API <input id="set-key" type="password" autocomplete="off" placeholder="cole aqui (fica criptografada)" /></label>
+        <label id="row-url">URL do Ollama <input id="set-url" type="text" spellcheck="false" /></label>
+        <label>Atalho global <input id="set-shortcut" type="text" spellcheck="false" /></label>
+        <label class="check"><input id="set-blur" type="checkbox" /> Esconder ao clicar fora</label>
+        <p id="set-status" class="status"></p>
+        <div class="row">
+          <button id="set-test" type="button">Testar conexão</button>
+          <button id="set-save" type="button" class="primary">Salvar</button>
+        </div>
+      </section>
+
+      <form id="form" autocomplete="off">
+        <button id="btn-settings" type="button" title="Configurações" aria-label="Configurações">⚙</button>
+        <input id="input" type="text" placeholder="Pergunte ou peça algo…" maxlength="4000" autofocus />
+        <button id="btn-new" type="button" title="Nova conversa" aria-label="Nova conversa">＋</button>
+        <button id="btn-send" type="submit" class="primary" aria-label="Enviar">➤</button>
+      </form>
+    </main>
+    <script type="module" src="renderer.js"></script>
+  </body>
+</html>
