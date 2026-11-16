@@ -24,13 +24,15 @@
 
       <section id="settings" hidden>
         <label>Provedor <select id="set-provider"></select></label>
-        <label>Modelo <input id="set-model" type="text" spellcheck="false" /></label>
+        <label>Modelo <input id="set-model" type="text" list="model-list" spellcheck="false" autocomplete="off" /></label>
+        <datalist id="model-list"></datalist>
         <label id="row-key">Chave de API <input id="set-key" type="password" autocomplete="off" placeholder="cole aqui (fica criptografada)" /></label>
         <label id="row-url">URL do Ollama <input id="set-url" type="text" spellcheck="false" /></label>
         <label>Atalho global <input id="set-shortcut" type="text" spellcheck="false" /></label>
         <label class="check"><input id="set-blur" type="checkbox" /> Esconder ao clicar fora</label>
         <p id="set-status" class="status"></p>
         <div class="row">
+          <button id="set-models" type="button" title="Lista os modelos que a sua chave pode usar">Buscar modelos</button>
           <button id="set-test" type="button">Testar conexão</button>
           <button id="set-save" type="button" class="primary">Salvar</button>
         </div>

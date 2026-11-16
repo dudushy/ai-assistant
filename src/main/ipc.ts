@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { type BrowserWindow, type IpcMainInvokeEvent, ipcMain } from 'electron';
 import type { IpcInvoke } from '../shared/ipc';
-import type { ChatEvent, ChatResult } from '../shared/types';
+import type { ChatEvent, ChatResult, ModelsResult } from '../shared/types';
 import { Agent } from './ai/agent';
+import { withModelRecovery } from './ai/modelRecovery';
+import { filterChatModels } from './ai/models';
 import { ProviderError } from './ai/provider';
 import { createProvider } from './ai/registry';
 import { isProviderId, type SettingsStore } from './settings';
@@ -42,7 +44,7 @@ export function registerIpc(deps: IpcDeps): void {
 
   const agent = new Agent({
     // provider real é montado a cada envio (ver chat:send); este placeholder nunca é usado
-    provider: { id: 'ollama', chat: () => Promise.reject(new Error('provider não configurado')) },
+    provider: { id: 'ollama', chat: () => Promise.reject(new Error('provider não configurado')), listModels: async () => [] },
     tools: BUILTIN_TOOLS,
     ctx,
     confirm: async () => false,
@@ -63,6 +65,28 @@ export function registerIpc(deps: IpcDeps): void {
       emit({ type: 'confirm', request: { id, tool, description } });
     });
 
+  /** Monta o provedor da configuração atual, opcionalmente com outro modelo. */
+  const buildProvider = async (model?: string) => {
+    const s = store.getPublic();
+    return createProvider(s.provider, {
+      apiKey: await store.getApiKey(s.provider),
+      model: model ?? s.models[s.provider],
+      ollamaUrl: s.ollamaUrl,
+    });
+  };
+
+  /** Executa com recuperação automática quando o modelo configurado deixou de existir (404). */
+  const withRecovery = <T>(run: (p: Awaited<ReturnType<typeof buildProvider>>) => Promise<T>) => {
+    const s = store.getPublic();
+    return withModelRecovery({
+      providerId: s.provider,
+      currentModel: s.models[s.provider],
+      build: buildProvider,
+      run,
+      saveModel: (m) => void store.patch({ models: { [s.provider]: m } }),
+    });
+  };
+
   const handlers: Handlers = {
     'chat:send': async (_e, text): Promise<ChatResult> => {
       if (typeof text !== 'string' || !text.trim()) return { ok: false, text: '', error: 'Mensagem vazia.' };
@@ -70,15 +94,12 @@ export function registerIpc(deps: IpcDeps): void {
       if (abort) return { ok: false, text: '', error: 'Ainda estou processando o pedido anterior.' };
       abort = new AbortController();
       try {
-        const s = store.getPublic();
-        const provider = createProvider(s.provider, {
-          apiKey: await store.getApiKey(s.provider),
-          model: s.models[s.provider],
-          ollamaUrl: s.ollamaUrl,
+        const signal = abort.signal;
+        const r = await withRecovery((provider) => {
+          agent.setDeps({ provider, tools: BUILTIN_TOOLS, ctx, confirm, onEvent: emit });
+          return agent.send(text.trim(), signal);
         });
-        agent.setDeps({ provider, tools: BUILTIN_TOOLS, ctx, confirm, onEvent: emit });
-        const reply = await agent.send(text.trim(), abort.signal);
-        return { ok: true, text: reply };
+        return { ok: true, text: r.value, ...(r.notice ? { notice: r.notice } : {}) };
       } catch (e) {
         const msg = e instanceof ProviderError || e instanceof Error ? e.message : String(e);
         return { ok: false, text: '', error: msg };
@@ -108,20 +129,20 @@ export function registerIpc(deps: IpcDeps): void {
     },
     'settings:test': async (): Promise<ChatResult> => {
       try {
-        const s = store.getPublic();
-        const provider = createProvider(s.provider, {
-          apiKey: await store.getApiKey(s.provider),
-          model: s.models[s.provider],
-          ollamaUrl: s.ollamaUrl,
-        });
-        const r = await provider.chat({
-          system: 'Responda apenas com a palavra OK.',
-          messages: [{ role: 'user', content: 'ping' }],
-          tools: [],
-        });
-        return { ok: true, text: r.text.trim().slice(0, 100) || 'OK' };
+        const r = await withRecovery((provider) =>
+          provider.chat({ system: 'Responda apenas com a palavra OK.', messages: [{ role: 'user', content: 'ping' }], tools: [] }),
+        );
+        return { ok: true, text: r.value.text.trim().slice(0, 100) || 'OK', ...(r.notice ? { notice: r.notice } : {}) };
       } catch (e) {
         return { ok: false, text: '', error: e instanceof Error ? e.message : String(e) };
+      }
+    },
+    'settings:models': async (): Promise<ModelsResult> => {
+      try {
+        const models = filterChatModels(await (await buildProvider()).listModels());
+        return { ok: true, models };
+      } catch (e) {
+        return { ok: false, models: [], error: e instanceof Error ? e.message : String(e) };
       }
     },
     'ui:resize': (_e, height) => {

@@ -25,6 +25,7 @@ function scripted(responses: ChatResponse[]): Provider & { seen: ChatRequest[] }
   return {
     id: 'ollama',
     seen,
+    listModels: async () => [],
     async chat(req) {
       seen.push({ ...req, messages: [...req.messages] });
       const r = responses[Math.min(i++, responses.length - 1)];

@@ -1,5 +1,5 @@
 import type { ChatMessage, ToolCall, ToolSpec } from '../../../shared/types';
-import { type ChatRequest, type ChatResponse, type Provider, ProviderError, parseArgs, postJson } from '../provider';
+import { type ChatRequest, type ChatResponse, type Provider, ProviderError, getJson, parseArgs, postJson } from '../provider';
 
 /** Adapter para APIs compatíveis com OpenAI Chat Completions (usado para Groq). */
 
@@ -49,6 +49,11 @@ export function parseOpenAIResponse(data: unknown): ChatResponse {
   return { text: typeof content === 'string' ? content : '', toolCalls };
 }
 
+export function parseOpenAIModels(data: unknown): string[] {
+  const list = (data as { data?: { id?: unknown }[] }).data;
+  return Array.isArray(list) ? list.map((m) => m.id).filter((id): id is string => typeof id === 'string') : [];
+}
+
 export function createOpenAICompatProvider(id: 'groq', baseUrl: string, apiKey: string, model: string): Provider {
   return {
     id,
@@ -61,6 +66,9 @@ export function createOpenAICompatProvider(id: 'groq', baseUrl: string, apiKey: 
       if (req.tools.length) body['tools'] = toOpenAITools(req.tools);
       const data = await postJson(`${baseUrl}/chat/completions`, { authorization: `Bearer ${apiKey}` }, body, req.signal);
       return parseOpenAIResponse(data);
+    },
+    async listModels(signal) {
+      return parseOpenAIModels(await getJson(`${baseUrl}/models`, { authorization: `Bearer ${apiKey}` }, signal));
     },
   };
 }

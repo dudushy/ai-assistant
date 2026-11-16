@@ -69,6 +69,7 @@ async function submit(): Promise<void> {
   try {
     const res = await window.api.sendMessage(text);
     pending.remove();
+    if (res.notice) addMessage('tool', `ℹ ${res.notice}`);
     if (res.ok) addMessage('bot', res.text);
     else addMessage('error', res.error ?? 'Erro desconhecido.');
   } catch (e) {
@@ -103,6 +104,7 @@ async function answerConfirm(ok: boolean): Promise<void> {
 // ---------- configurações ----------
 const selProvider = $<HTMLSelectElement>('set-provider');
 const inModel = $<HTMLInputElement>('set-model');
+const modelList = $<HTMLDataListElement>('model-list');
 const inKey = $<HTMLInputElement>('set-key');
 const inUrl = $<HTMLInputElement>('set-url');
 const inShortcut = $<HTMLInputElement>('set-shortcut');
@@ -125,6 +127,7 @@ function renderProviderFields(): void {
   const id = currentProvider();
   const info = settings.providers.find((p) => p.id === id);
   inModel.value = settings.models[id];
+  modelList.replaceChildren(); // a lista é do provedor anterior
   rowKey.hidden = !info?.needsKey;
   rowUrl.hidden = id !== 'ollama';
   inKey.value = '';
@@ -175,7 +178,25 @@ async function testConnection(): Promise<void> {
   if (!(await saveSettings())) return;
   setStatus('Testando…');
   const r = await window.api.testProvider();
-  setStatus(r.ok ? `Conectado ✔ (resposta: ${r.text})` : (r.error ?? 'Falhou.'), !r.ok);
+  if (r.ok && r.notice) fillSettings(await window.api.getSettings()); // o modelo pode ter sido trocado automaticamente
+  setStatus(r.ok ? `Conectado ✔ (resposta: ${r.text})${r.notice ? ` — ${r.notice}` : ''}` : (r.error ?? 'Falhou.'), !r.ok);
+}
+
+async function fetchModels(): Promise<void> {
+  if (!(await saveSettings())) return;
+  setStatus('Buscando modelos…');
+  const r = await window.api.listModels();
+  if (!r.ok) return setStatus(r.error ?? 'Não consegui listar os modelos.', true);
+  modelList.replaceChildren(
+    ...r.models.map((m) => {
+      const o = document.createElement('option');
+      o.value = m;
+      return o;
+    }),
+  );
+  setStatus(`${r.models.length} modelos disponíveis — clique no campo Modelo para escolher.`);
+  inModel.focus();
+  inModel.select();
 }
 
 function toggleSettings(): void {
@@ -200,6 +221,7 @@ $('confirm-yes').addEventListener('click', () => void answerConfirm(true));
 $('confirm-no').addEventListener('click', () => void answerConfirm(false));
 $('set-save').addEventListener('click', () => void saveSettings());
 $('set-test').addEventListener('click', () => void testConnection());
+$('set-models').addEventListener('click', () => void fetchModels());
 selProvider.addEventListener('change', renderProviderFields);
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {

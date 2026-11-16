@@ -1,4 +1,4 @@
-import type { ChatEvent, ChatResult, ProviderId, PublicSettings, SettingsPatch } from './types';
+import type { ChatEvent, ChatResult, ModelsResult, ProviderId, PublicSettings, SettingsPatch } from './types';
 
 /**
  * Contrato de IPC. ATENÇÃO: o preload roda em sandbox e não pode importar este arquivo em runtime;
@@ -13,6 +13,7 @@ export interface IpcInvoke {
   'settings:set': (patch: SettingsPatch) => PublicSettings;
   'settings:setKey': (provider: ProviderId, key: string) => PublicSettings;
   'settings:test': () => ChatResult;
+  'settings:models': () => ModelsResult;
   'ui:resize': (height: number) => void;
   'ui:hide': () => void;
 }
@@ -32,6 +33,7 @@ export interface RendererApi {
   setSettings(patch: SettingsPatch): Promise<PublicSettings>;
   setApiKey(provider: ProviderId, key: string): Promise<PublicSettings>;
   testProvider(): Promise<ChatResult>;
+  listModels(): Promise<ModelsResult>;
   resize(height: number): Promise<void>;
   hide(): Promise<void>;
   onChatEvent(cb: (e: ChatEvent) => void): () => void;

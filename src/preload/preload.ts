@@ -23,6 +23,7 @@ const api: RendererApi = {
   setSettings: (patch) => invoke('settings:set', patch),
   setApiKey: (provider, key) => invoke('settings:setKey', provider, key),
   testProvider: () => invoke('settings:test'),
+  listModels: () => invoke('settings:models'),
   resize: (height) => invoke('ui:resize', height),
   hide: () => invoke('ui:hide'),
   onChatEvent: (cb) => on('chat:event', cb),

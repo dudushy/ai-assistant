@@ -92,4 +92,13 @@ export interface ChatResult {
   ok: boolean;
   text: string;
   error?: string;
+  /** Aviso informativo (ex.: o modelo foi trocado automaticamente). */
+  notice?: string;
+}
+
+export interface ModelsResult {
+  ok: boolean;
+  /** Modelos de chat disponíveis para a chave/servidor atual. */
+  models: string[];
+  error?: string;
 }

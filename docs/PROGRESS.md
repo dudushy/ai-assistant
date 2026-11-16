@@ -46,6 +46,13 @@ de cada API — **o primeiro teste real pode revelar ajustes** (ex.: nome de mod
 - Artefatos (não versionados): Setup ≈ 113 MB, Portable ≈ 103 MB. Sem assinatura (D-3).
 - Não verificado: instalação real do instalador; uso da UI por humano; APIs reais.
 
+### Sessão 4 — 2026-11-15 (primeiro bug do teste manual)
+- **Relato do usuário:** *"Erro 404 do provedor: The model `llama-3.3-70b-versatile` does not exist or you do not have access to it."* (Groq). O modelo padrão tinha sido descontinuado — exatamente o risco anotado em "Valores padrão que podem precisar de ajuste".
+- **Correção estrutural (ADR-013 / F-4):** `listModels` nos 4 adapters, `pickFallbackModel`, `withModelRecovery` (404 ⇒ lista ⇒ escolhe ⇒ repete 1×, só salva se funcionar, avisa), botão **Buscar modelos**, canal IPC `settings:models`. 12 testes novos (47 no total).
+- **Armadilha:** heredoc no Bash removeu a barra de escape em `/^models\//` (regex virou `/^models//`); trocado por `.replace('models/', '')`. Preferir Edit/Write para código com barras invertidas.
+- Os nomes padrão em `PROVIDERS` ainda podem envelhecer: agora isso se auto-corrige em 404, mas vale revisar os padrões a cada release.
+- Teste manual: continua em andamento pelo usuário (primeiro achado acima). Itens ainda sem relato: demais ferramentas, confirmações, bandeja, erros amigáveis.
+
 ### Sessão 3 — 2026-11-15 (S-4: protocolo `app://`)
 - Novo `appUrl.ts` (puro, testado: path traversal, `%2e%2e`, `\`, hosts/portas/esquemas) e `protocol.ts` (registro + handler com `fs`); janela usa `loadURL(app://ui/index.html)`; IPC confia só nessa URL. Fuse `GrantFileProtocolExtraPrivileges` **desligado** (ADR-012 substitui a exceção da ADR-011).
 - Novo `scripts/smoke.mjs` + `npm run smoke`: teste de ponta a ponta via DevTools Protocol. **Passou em dev, `win-unpacked` e Portable** (página, preload, sem Node no renderer, IPC, CSS, CSP, `file://` bloqueado). É a primeira verificação que realmente exercita preload+IPC no app empacotado.

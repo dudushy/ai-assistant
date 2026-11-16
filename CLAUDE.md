@@ -1,6 +1,6 @@
 # CLAUDE.md — AI Assistant
 
-> Arquivo lido automaticamente pelo Claude Code CLI a cada sessão. **Leia isto primeiro, depois `docs/PROGRESS.md`.**
+> Arquivo lido automaticamente pelo Claude Code CLI a cada sessão. **Leia isto primeiro, depois `docs/SESSION_STATE.md` (snapshot da última pausa) e `docs/PROGRESS.md` (histórico).**
 
 ## O que é
 Assistente de IA para desktop (Windows primeiro), em **Electron + TypeScript**: uma barra flutuante no topo da
@@ -59,6 +59,8 @@ docs/           documentação (ver índice abaixo)
 - **Gemini/Anthropic** exigem que resultados de várias tools de uma mesma rodada fiquem no **mesmo turno** do usuário (já tratado nos conversores; há testes).
 - **Heredocs longos no Bash tool** quebraram por aspas; prefira a ferramenta Write para criar arquivos de código.
 - **A UI é servida por `app://ui/…`, não por `file://`** (ADR-012). Qualquer arquivo novo de UI (ex.: imagem, segundo `.js`) precisa entrar na lista `ASSETS` de `src/main/appUrl.ts` **e** em `scripts/copy-static.mjs` (se for estático), senão dá 404. Com o fuse `GrantFileProtocolExtraPrivileges` desligado, um `loadFile`/`file://` não funciona empacotado — não volte a usá-lo.
+- **Se o app do usuário estiver aberto** (teste manual), nunca o encerre: a trava de instância única faz qualquer outra instância sair sozinha. `scripts/smoke.mjs` já usa `--user-data-dir` temporário; para rodar o app manualmente em paralelo, passe `--user-data-dir=<pasta>` também.
+- **Nomes de modelo de IA envelhecem** (já deu 404 no Groq): o app se recupera sozinho (ADR-013), mas todo provedor novo precisa de `listModels` + preferências em `ai/models.ts`.
 - `registerAppScheme()` precisa rodar **antes** de `app.whenReady()`; `serveApp()` depois, antes de criar a janela.
 - **Após mudar `build.electronFuses`, UI ou protocolo:** `npm run pack` e `node scripts/smoke.mjs "release/win-unpacked/AI Assistant.exe"` (precisa dar "OK").
 - **Nomes de artefatos** de `nsis` e `portable` precisam ser diferentes, senão um sobrescreve o outro.
@@ -74,7 +76,8 @@ docs/           documentação (ver índice abaixo)
 ## Índice de documentação
 | Arquivo | Conteúdo |
 |---|---|
-| `docs/PROGRESS.md` | **Estado atual, o que foi feito, próximos passos** (atualize sempre) |
+| `docs/SESSION_STATE.md` | **Snapshot da última pausa**: onde parou, o que o usuário deve fazer, resultados do teste manual (sobrescrever a cada pausa) |
+| `docs/PROGRESS.md` | Estado atual, histórico de sessões, próximos passos (atualize sempre) |
 | `docs/ARCHITECTURE.md` | Componentes, fluxos (envio de mensagem, confirmação), contratos |
 | `docs/SECURITY.md` | Modelo de ameaças, controles, checklist para novas ferramentas |
 | `docs/DECISIONS.md` | Registro de decisões (ADR) com contexto e consequências |

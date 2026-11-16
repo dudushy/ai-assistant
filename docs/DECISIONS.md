@@ -41,6 +41,16 @@ Formato: **ID — título** · status · contexto · decisão · consequências.
 ## ADR-009 — Testes com `node:test` sobre `dist/` · aceita
 - **Decisão:** sem Jest/Vitest (zero deps). `npm test` compila e roda `node --test "dist/**/*.test.js"`. Código testável não importa `electron`.
 
+## ADR-013 — Descoberta de modelos e recuperação automática em 404 · aceita
+- **Contexto (bug real, teste manual 1):** o modelo padrão do Groq (`llama-3.3-70b-versatile`) foi descontinuado e a conversa falhou com *"Erro 404 … model does not exist"*.
+  Nomes de modelo envelhecem; qualquer padrão fixo vai quebrar de novo.
+- **Decisão:** (1) `Provider.listModels()` em todos os adapters (`/models`, `/api/tags`…); (2) `pickFallbackModel` (puro, em `ai/models.ts`) escolhe um
+  substituto por ordem de preferência, ignorando áudio/embedding/guard; (3) `withModelRecovery` (`ai/modelRecovery.ts`): em **404**, lista, escolhe, repete **uma** vez,
+  só persiste o novo modelo **depois de funcionar** e devolve um `notice` mostrado ao usuário; vale para a conversa e para "Testar conexão";
+  (4) botão **Buscar modelos** no painel ⚙ preenche o campo (datalist) com os modelos da chave do usuário.
+- **Consequências:** só 404 dispara a troca (401/429/rede continuam erros normais, sem listar nada). O substituto pode ter qualidade/custo diferentes — por isso há aviso
+  explícito e o usuário pode fixar outro modelo. Todo novo provedor **deve** implementar `listModels`.
+
 ## ADR-012 — UI servida por protocolo `app://` (fuse do `file://` desligado) · aceita
 - **Contexto:** ADR-011 precisou ligar `GrantFileProtocolExtraPrivileges` para a UI carregar do asar via `file://`, o que concede privilégios extras a qualquer página `file://`.
 - **Decisão:** esquema customizado `app://ui/` registrado como privilegiado (`standard`+`secure`) **antes** do `app.ready` (`protocol.ts`).

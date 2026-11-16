@@ -5,6 +5,9 @@
 //   dev:         node scripts/smoke.mjs node_modules/electron/dist/electron.exe .
 //   empacotado:  node scripts/smoke.mjs "release/win-unpacked/AI Assistant.exe"
 import { spawn, spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const [exe, ...extra] = process.argv.slice(2);
 if (!exe) {
@@ -12,7 +15,9 @@ if (!exe) {
   process.exit(2);
 }
 const port = 9300 + Math.floor(Math.random() * 400);
-const child = spawn(exe, [...extra, '--hidden', `--remote-debugging-port=${port}`], { stdio: ['ignore', 'pipe', 'pipe'] });
+// pasta de dados temporária: isola do app real do usuário (outra trava de instância, outras configurações)
+const dataDir = mkdtempSync(join(tmpdir(), 'ai-assistant-smoke-'));
+const child = spawn(exe, [...extra, '--hidden', `--remote-debugging-port=${port}`, `--user-data-dir=${dataDir}`], { stdio: ['ignore', 'pipe', 'pipe'] });
 let log = '';
 child.stdout.on('data', (d) => (log += d));
 child.stderr.on('data', (d) => (log += d));
@@ -112,6 +117,12 @@ try {
   check('execução do smoke test', false, e instanceof Error ? e.message : String(e));
 } finally {
   stop();
+  await sleep(500);
+  try {
+    rmSync(dataDir, { recursive: true, force: true });
+  } catch {
+    /* arquivos ainda em uso: o SO limpa o temp depois */
+  }
 }
 
 const interesting = log.split('\n').filter((l) => l.trim() && !/Network service|GPU process|gpu_process|network_service/.test(l));

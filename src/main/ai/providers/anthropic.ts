@@ -1,5 +1,5 @@
 import type { ChatMessage, ToolCall, ToolSpec } from '../../../shared/types';
-import { type ChatRequest, type ChatResponse, type Provider, ProviderError, parseArgs, postJson } from '../provider';
+import { type ChatRequest, type ChatResponse, type Provider, ProviderError, getJson, parseArgs, postJson } from '../provider';
 
 type Block =
   | { type: 'text'; text: string }
@@ -49,6 +49,11 @@ export function parseAnthropicResponse(data: unknown): ChatResponse {
   return { text, toolCalls };
 }
 
+export function parseAnthropicModels(data: unknown): string[] {
+  const list = (data as { data?: { id?: unknown }[] }).data;
+  return Array.isArray(list) ? list.map((m) => m.id).filter((id): id is string => typeof id === 'string') : [];
+}
+
 export function createAnthropicProvider(apiKey: string, model: string): Provider {
   return {
     id: 'anthropic',
@@ -67,6 +72,11 @@ export function createAnthropicProvider(apiKey: string, model: string): Provider
         req.signal,
       );
       return parseAnthropicResponse(data);
+    },
+    async listModels(signal) {
+      return parseAnthropicModels(
+        await getJson('https://api.anthropic.com/v1/models?limit=100', { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }, signal),
+      );
     },
   };
 }

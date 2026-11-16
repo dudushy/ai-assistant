@@ -1,5 +1,5 @@
 import type { ChatMessage, ToolCall, ToolSpec } from '../../../shared/types';
-import { type ChatRequest, type ChatResponse, type Provider, ProviderError, parseArgs, postJson } from '../provider';
+import { type ChatRequest, type ChatResponse, type Provider, ProviderError, getJson, parseArgs, postJson } from '../provider';
 
 type Part =
   | { text: string }
@@ -72,6 +72,15 @@ export function parseGeminiResponse(data: unknown): ChatResponse {
   return { text, toolCalls };
 }
 
+/** Só modelos que suportam generateContent; remove o prefixo "models/". */
+export function parseGeminiModels(data: unknown): string[] {
+  const list = (data as { models?: { name?: unknown; supportedGenerationMethods?: unknown }[] }).models;
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((m) => typeof m.name === 'string' && Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+    .map((m) => (m.name as string).replace('models/', ''));
+}
+
 export function createGeminiProvider(apiKey: string, model: string): Provider {
   return {
     id: 'gemini',
@@ -86,6 +95,9 @@ export function createGeminiProvider(apiKey: string, model: string): Provider {
       // a chave vai no cabeçalho (nunca na URL) para não vazar em logs/erros
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
       return parseGeminiResponse(await postJson(url, { 'x-goog-api-key': apiKey }, body, req.signal));
+    },
+    async listModels(signal) {
+      return parseGeminiModels(await getJson('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { 'x-goog-api-key': apiKey }, signal));
     },
   };
 }

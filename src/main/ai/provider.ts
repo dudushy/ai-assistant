@@ -15,6 +15,8 @@ export interface ChatResponse {
 export interface Provider {
   readonly id: ProviderId;
   chat(req: ChatRequest): Promise<ChatResponse>;
+  /** Modelos disponíveis para a conta/servidor atual (sem filtragem de "só chat"; use filterChatModels). */
+  listModels(signal?: AbortSignal): Promise<string[]>;
 }
 
 export class ProviderError extends Error {
@@ -36,23 +38,27 @@ export interface ProviderConfig {
 const DEFAULT_TIMEOUT_MS = 90_000;
 
 /** POST JSON com timeout + cancelamento. Nunca inclui chaves na mensagem de erro. */
-export async function postJson(
+export function postJson(
   url: string,
   headers: Record<string, string>,
   body: unknown,
   signal?: AbortSignal,
   timeoutMs = DEFAULT_TIMEOUT_MS,
 ): Promise<unknown> {
+  return requestJson(url, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) }, signal, timeoutMs);
+}
+
+/** GET JSON (usado para listar modelos). Timeout menor: é só uma listagem. */
+export function getJson(url: string, headers: Record<string, string>, signal?: AbortSignal, timeoutMs = 20_000): Promise<unknown> {
+  return requestJson(url, { method: 'GET', headers }, signal, timeoutMs);
+}
+
+async function requestJson(url: string, init: RequestInit, signal: AbortSignal | undefined, timeoutMs: number): Promise<unknown> {
   const signals = [AbortSignal.timeout(timeoutMs)];
   if (signal) signals.push(signal);
   let res: Response;
   try {
-    res = await fetch(url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', ...headers },
-      body: JSON.stringify(body),
-      signal: AbortSignal.any(signals),
-    });
+    res = await fetch(url, { ...init, signal: AbortSignal.any(signals) });
   } catch (e) {
     if (signal?.aborted) throw new ProviderError('Cancelado.');
     const name = e instanceof Error ? e.name : '';

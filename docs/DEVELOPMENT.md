@@ -14,7 +14,8 @@ Dados do app: `%APPDATA%\AI Assistant\settings.json` (o nome vem do `productName
 ## Como adicionar um provedor de IA
 1. `src/shared/types.ts`: adicionar o id em `PROVIDER_IDS` e a entrada em `PROVIDERS` (label, needsKey, defaultModel).
 2. Criar `src/main/ai/providers/<nome>.ts` com `toXMessages`, `toXTools`, `parseXResponse` (puras, exportadas) e `createXProvider`
-   usando `postJson` (segredo em **header**, nunca na URL).
+   usando `postJson` (segredo em **header**, nunca na URL). **Obrigatório:** implementar `listModels` (com `getJson` + um `parseXModels` puro) e
+   acrescentar a lista de preferências em `PREFERENCES` de `ai/models.ts` (ADR-013). Um 404 do provedor para modelo inexistente deve chegar como `ProviderError.status === 404`.
 3. Registrar em `src/main/ai/registry.ts`.
 4. Testes em `providers.test.ts`: conversão de conversa com 2 tool calls, parsing de resposta com/sem tool, caso de erro.
 5. Atualizar tabela em `ARCHITECTURE.md` e `DECISIONS.md` se houver particularidade.
@@ -39,6 +40,8 @@ Dados do app: `%APPDATA%\AI Assistant\settings.json` (o nome vem do `productName
 - [ ] Segunda instância apenas mostra a barra.
 - [ ] ⚙: trocar provedor mostra/oculta campos (chave / URL do Ollama); salvar persiste após reiniciar; chave aparece como "salva" e **não** em texto no `settings.json`.
 - [ ] "Testar conexão" para cada provedor configurado (Ollama: `ollama pull llama3.2` antes).
+- [ ] "Buscar modelos" lista os modelos da chave e o campo Modelo oferece a lista; escolher um e Salvar persiste.
+- [ ] Com um nome de modelo inexistente (ex.: `modelo-que-nao-existe`), a conversa e o "Testar conexão" trocam sozinhos para um modelo válido e mostram o aviso `ℹ …`.
 - [ ] Conversa simples; "que horas são?" (tool `get_datetime`); "abre a calculadora"; "pesquisa receita de bolo".
 - [ ] "me avisa em 1 minuto" gera notificação do SO.
 - [ ] "bloqueia o pc" mostra confirmação; **Recusar** não bloqueia; **Permitir** bloqueia; ignorar 60 s = recusa.
@@ -55,6 +58,7 @@ node scripts/smoke.mjs "release/win-unpacked/AI Assistant.exe"   # app empacotad
 Inicia o app oculto (`--hidden`) com `--remote-debugging-port` aleatório, conecta no DevTools Protocol e verifica: página em `app://ui/index.html`,
 `window.api` exposto, **sem** `require`/`process` no renderer, IPC aceitando a origem (4 provedores chegam ao seletor), CSS aplicado, CSP bloqueando
 script inline e `fetch('file://…')` bloqueado. Sai com código 1 se algo falhar. Não substitui o checklist manual (não clica, não usa chaves reais).
+Roda com `--user-data-dir` temporário: **não** conflita com uma instância do app aberta (a trava de instância única e o cache são por pasta de dados) e não toca nas configurações reais.
 
 ## Empacotamento (feito — ADR-011)
 ```bash

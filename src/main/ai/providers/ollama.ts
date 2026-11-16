@@ -1,5 +1,5 @@
 import type { ChatMessage, ToolCall } from '../../../shared/types';
-import { type ChatRequest, type ChatResponse, type Provider, ProviderError, parseArgs, postJson } from '../provider';
+import { type ChatRequest, type ChatResponse, type Provider, ProviderError, getJson, parseArgs, postJson } from '../provider';
 import { toOpenAITools } from './openai-compat';
 
 export interface OllamaMessage {
@@ -38,6 +38,11 @@ export function parseOllamaResponse(data: unknown): ChatResponse {
   return { text: msg.content ?? '', toolCalls };
 }
 
+export function parseOllamaModels(data: unknown): string[] {
+  const list = (data as { models?: { name?: unknown }[] }).models;
+  return Array.isArray(list) ? list.map((m) => m.name).filter((n): n is string => typeof n === 'string') : [];
+}
+
 export function createOllamaProvider(baseUrl: string, model: string): Provider {
   const base = baseUrl.replace(/\/+$/, '');
   return {
@@ -52,6 +57,9 @@ export function createOllamaProvider(baseUrl: string, model: string): Provider {
       if (req.tools.length) body['tools'] = toOpenAITools(req.tools);
       const data = await postJson(`${base}/api/chat`, {}, body, req.signal, 180_000);
       return parseOllamaResponse(data);
+    },
+    async listModels(signal) {
+      return parseOllamaModels(await getJson(`${base}/api/tags`, {}, signal));
     },
   };
 }

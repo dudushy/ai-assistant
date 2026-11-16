@@ -18,7 +18,7 @@ Legenda: ✅ feito · 🔜 próximo · 💡 ideia. Prioridade P0 (crítico) → 
 - 🔜 **F-1 (P1)** Renderização de Markdown seguro nas respostas (sem `innerHTML`: construir nós DOM).
 - 🔜 **F-2 (P1)** Histórico de conversas persistente (opt-in) + comando para apagar.
 - 🔜 **F-3 (P2)** Streaming de respostas (revisar ADR-006).
-- 🔜 **F-4 (P2)** Seleção de modelo a partir da lista do provedor (`/models`), com fallback quando o modelo configurado deixa de existir (erro 404).
+- ✅ **F-4** Lista de modelos do provedor + recuperação automática em 404 (ADR-013).
 - 🔜 **F-5 (P2)** Lista de apps ampliada via descoberta de atalhos do Menu Iniciar (com allowlist/confirmação).
 - 🔜 **T-1 (P2)** Teste de integração do `ipc.ts`/`window.ts` com Electron headless (Playwright/Spectron-like) ou testes de contrato do IPC.
 - 🔜 **T-2 (P3)** CI (GitHub Actions: `npm ci && npm test` em windows-latest).
