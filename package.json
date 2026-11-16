@@ -1,0 +1,20 @@
+{
+  "name": "ai-assistant",
+  "version": "0.1.0",
+  "description": "Assistente de IA para desktop (Electron + TypeScript): barra no topo da tela, multi-provedor e ações no PC.",
+  "private": true,
+  "main": "dist/main/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.renderer.json && node scripts/copy-static.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
+    "test": "npm run build && node --test \"dist/**/*.test.js\"",
+    "start": "npm run build && electron .",
+    "dev": "npm run build && electron . --dev"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "electron": "^45.3.2",
+    "typescript": "^5.9.3"
+  }
+}
