@@ -7,7 +7,7 @@ Legenda: ✅ feito · 🔜 próximo · 💡 ideia. Prioridade P0 (crítico) → 
 - ✅ 4 provedores (Ollama, Groq, Gemini, Anthropic) com tool calling
 - ✅ 8 ferramentas + confirmação de ações sensíveis
 - ✅ Configurações com chaves cifradas; teste de conexão
-- ✅ Testes unitários (32) e documentação
+- ✅ Testes unitários (35) e documentação
 
 ## Próximo (v0.2) — qualidade e distribuição
 - 🔜 **D-1 (P0)** Validação manual completa no Windows (checklist em DEVELOPMENT.md) com chaves reais e com Ollama.
@@ -24,7 +24,7 @@ Legenda: ✅ feito · 🔜 próximo · 💡 ideia. Prioridade P0 (crítico) → 
 - 🔜 **T-2 (P3)** CI (GitHub Actions: `npm ci && npm test` em windows-latest).
 
 ## Segurança futura
-- 🔜 **S-4 (P1)** Servir a UI por protocolo customizado (`app://`) e desligar o fuse `GrantFileProtocolExtraPrivileges` (ADR-011).
+- ✅ **S-4** UI servida por `app://` e fuse `GrantFileProtocolExtraPrivileges` desligado (ADR-012).
 - 💡 **S-1 (P1)** "Sessão contaminada": após ler conteúdo externo, bloquear ferramentas sensíveis até nova confirmação (T1).
 - 💡 **S-2 (P2)** Log de auditoria local das ações executadas (somente nome da ferramenta + resultado, sem segredos).
 - 💡 **S-3 (P2)** Política por ferramenta (sempre perguntar / permitir / bloquear) configurável.

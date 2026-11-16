@@ -47,8 +47,14 @@ Dados do app: `%APPDATA%\AI Assistant\settings.json` (o nome vem do `productName
 - [ ] Erros amigáveis: sem chave, chave inválida (401/403), Ollama desligado, sem internet.
 - [ ] Janela cresce/encolhe com o conteúdo (sem cortar texto, até 620 px, com rolagem).
 
-## Smoke test automatizável
-`timeout 8 node_modules/electron/dist/electron.exe . --hidden` — não deve imprimir erros além dos de GPU/Network causados pelo kill.
+## Smoke test automatizável (`scripts/smoke.mjs`)
+```bash
+npm run smoke                                              # app em modo dev
+node scripts/smoke.mjs "release/win-unpacked/AI Assistant.exe"   # app empacotado (também funciona com o Portable)
+```
+Inicia o app oculto (`--hidden`) com `--remote-debugging-port` aleatório, conecta no DevTools Protocol e verifica: página em `app://ui/index.html`,
+`window.api` exposto, **sem** `require`/`process` no renderer, IPC aceitando a origem (4 provedores chegam ao seletor), CSS aplicado, CSP bloqueando
+script inline e `fetch('file://…')` bloqueado. Sai com código 1 se algo falhar. Não substitui o checklist manual (não clica, não usa chaves reais).
 
 ## Empacotamento (feito — ADR-011)
 ```bash
@@ -67,7 +73,7 @@ Requer internet no 1º build (baixa Electron, NSIS e 7zip). Build completo: ~2�
 **Verificação pós-build (faça sempre):**
 1. `node node_modules/@electron/asar/bin/asar.js list release/win-unpacked/resources/app.asar` — deve conter só `dist/`, `assets/icon.png`, `package.json` (sem `.map`, testes, `src/`).
 2. `node node_modules/@electron/fuses/dist/bin.js read --app "release/win-unpacked/AI Assistant.exe"` — conferir os fuses do ADR-011.
-3. `timeout 8 "release/win-unpacked/AI Assistant.exe" --hidden` — não pode imprimir `Failed to load URL`.
+3. `node scripts/smoke.mjs "release/win-unpacked/AI Assistant.exe"` (e o mesmo com o `…-Portable-…exe`) — tem que terminar em "OK: todas as verificações passaram".
 4. Rodar o checklist manual acima com o **portátil** e com uma instalação real do **instalador** (desinstalar depois).
 
 Não assinado: o SmartScreen mostrará "Windows protegeu o computador" → *Mais informações → Executar assim mesmo* (D-3 resolve).

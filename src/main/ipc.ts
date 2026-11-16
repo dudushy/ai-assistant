@@ -8,8 +8,8 @@ import { createProvider } from './ai/registry';
 import { isProviderId, type SettingsStore } from './settings';
 import { BUILTIN_TOOLS } from './tools/builtin';
 import type { Platform, ToolContext } from './tools/types';
-import { RENDERER_FILE, resizeWindow } from './window';
-import { pathToFileURL } from 'node:url';
+import { RENDERER_URL } from './appUrl';
+import { resizeWindow } from './window';
 
 const MAX_MESSAGE_CHARS = 4000;
 const CONFIRM_TIMEOUT_MS = 60_000;
@@ -26,7 +26,6 @@ type Handlers = { [K in keyof IpcInvoke]: (e: IpcMainInvokeEvent, ...a: Paramete
 
 export function registerIpc(deps: IpcDeps): void {
   const { store, platform } = deps;
-  const trustedUrl = pathToFileURL(RENDERER_FILE).toString();
 
   const ctx: ToolContext = {
     platform,
@@ -136,7 +135,7 @@ export function registerIpc(deps: IpcDeps): void {
   for (const [channel, handler] of Object.entries(handlers) as [keyof IpcInvoke, (e: IpcMainInvokeEvent, ...a: never[]) => unknown][]) {
     ipcMain.handle(channel, (e, ...args) => {
       // só aceita chamadas vindas da nossa própria página
-      if (e.senderFrame?.url !== trustedUrl) throw new Error('Origem não autorizada.');
+      if (e.senderFrame?.url !== RENDERER_URL) throw new Error('Origem não autorizada.');
       return (handler as (e: IpcMainInvokeEvent, ...a: unknown[]) => unknown)(e, ...args);
     });
   }

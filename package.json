@@ -10,6 +10,7 @@
     "test": "npm run build && node --test \"dist/**/*.test.js\"",
     "start": "npm run build && electron .",
     "dev": "npm run build && electron . --dev",
+    "smoke": "npm run build && node scripts/smoke.mjs node_modules/electron/dist/electron.exe .",
     "pack": "npm run build && electron-builder --win --dir",
     "dist": "npm run build && electron-builder --win nsis portable --x64"
   },
@@ -72,7 +73,7 @@
       "enableNodeCliInspectArguments": false,
       "enableEmbeddedAsarIntegrityValidation": true,
       "onlyLoadAppFromAsar": true,
-      "grantFileProtocolExtraPrivileges": true
+      "grantFileProtocolExtraPrivileges": false
     },
     "portable": {
       "artifactName": "${productName}-Portable-${version}-${arch}.${ext}"

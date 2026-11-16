@@ -1,12 +1,12 @@
 import path from 'node:path';
 import { BrowserWindow, screen } from 'electron';
+import { RENDERER_URL } from './appUrl';
 
 const WIDTH = 680;
 export const MIN_HEIGHT = 72;
 export const MAX_HEIGHT = 620;
 const TOP_MARGIN = 12;
 
-export const RENDERER_FILE = path.join(__dirname, '..', 'renderer', 'index.html');
 
 export function createMainWindow(opts: { devTools: boolean; shouldHideOnBlur: () => boolean }): BrowserWindow {
   const win = new BrowserWindow({
@@ -41,7 +41,7 @@ export function createMainWindow(opts: { devTools: boolean; shouldHideOnBlur: ()
     if (opts.shouldHideOnBlur() && !win.webContents.isDevToolsOpened()) win.hide();
   });
 
-  void win.loadFile(RENDERER_FILE);
+  void win.loadURL(RENDERER_URL);
   return win;
 }
 

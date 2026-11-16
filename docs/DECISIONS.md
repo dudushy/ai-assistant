@@ -41,7 +41,17 @@ Formato: **ID — título** · status · contexto · decisão · consequências.
 ## ADR-009 — Testes com `node:test` sobre `dist/` · aceita
 - **Decisão:** sem Jest/Vitest (zero deps). `npm test` compila e roda `node --test "dist/**/*.test.js"`. Código testável não importa `electron`.
 
-## ADR-011 — Empacotamento com electron-builder (NSIS + portátil) · aceita
+## ADR-012 — UI servida por protocolo `app://` (fuse do `file://` desligado) · aceita
+- **Contexto:** ADR-011 precisou ligar `GrantFileProtocolExtraPrivileges` para a UI carregar do asar via `file://`, o que concede privilégios extras a qualquer página `file://`.
+- **Decisão:** esquema customizado `app://ui/` registrado como privilegiado (`standard`+`secure`) **antes** do `app.ready` (`protocol.ts`).
+  O handler serve **somente** `index.html`, `renderer.js` e `styles.css` (lista fechada em `appUrl.ts`), lendo com `fs` (compatível com asar), com
+  CSP também como **cabeçalho** HTTP, `nosniff` e `no-store`. Qualquer outro caminho/host/porta/esquema ⇒ 404. O fuse volta a ficar **desligado**.
+  A origem confiável do IPC passou a ser exatamente `app://ui/index.html` (`RENDERER_URL`).
+- **Consequências:** nenhuma página do app tem acesso a `file://` (confirmado: `fetch('file:///…')` falha); resolução de URLs é pura e testada (path traversal, `%2e%2e`, barras
+  invertidas, outros hosts). Novo arquivo de UI ⇒ precisa entrar em `ASSETS` (senão 404). Substitui a exceção do `file://` da ADR-011.
+- **Verificação:** `scripts/smoke.mjs` (ver DEVELOPMENT.md) comprova página, preload, IPC, CSP e bloqueio de `file://` no dev, no `win-unpacked` e no portátil.
+
+## ADR-011 — Empacotamento com electron-builder (NSIS + portátil) · aceita (a exceção do `file://` foi substituída pela ADR-012)
 - **Contexto:** precisamos distribuir um `.exe`. Alternativas: `@electron/packager` (só pasta) ou electron-builder (instalador + portátil).
 - **Decisão:** `electron-builder` como **devDependency** (nunca vai no pacote). Alvos `nsis` (instalador por usuário, com escolha de pasta) e `portable`,
   ambos x64; nomes distintos (`…-Setup-…` e `…-Portable-…`) — com o mesmo nome um sobrescreve o outro. Saída em `release/` (ignorada pelo git).

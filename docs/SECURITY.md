@@ -14,12 +14,13 @@ Este documento fixa o modelo de ameaças e os controles. **Leia antes de adicion
 | T3 | URL maliciosa (`file:`, `javascript:`, credenciais) | `validateWebUrl`: só http(s), sem `user:pass@`, ≤ 2048. |
 | T4 | Vazamento de chave de API | Cifrada em disco (`safeStorage`); recusa salvar sem criptografia; nunca enviada ao renderer; Gemini usa header (não URL); mensagens de erro não incluem a chave; `settings.json` com modo 0600. |
 | T5 | Renderer comprometido (XSS) | `contextIsolation`, `sandbox`, `nodeIntegration:false`, CSP `default-src 'none'; script-src 'self'`, só `textContent`, navegação/`window.open` bloqueados, permissões negadas, sem conteúdo remoto carregado. |
-| T6 | IPC forjado por outra página/frame | Todo handler checa `senderFrame.url === file://…/index.html`; entradas validadas (tipo/tamanho). |
+| T6 | IPC forjado por outra página/frame | Todo handler checa `senderFrame.url === app://ui/index.html` (`RENDERER_URL`); entradas validadas (tipo/tamanho). |
 | T7 | Ação sensível sem consentimento | `needsConfirm` + fail-closed (timeout 60 s e cancelar = recusar). |
 | T8 | Loop infinito de tools / custo | `MAX_STEPS = 6`; timeouts de rede (90 s; Ollama 180 s); cancelamento via `AbortSignal`. |
 | T9 | Supply chain | Zero dependências de runtime; só devDependencies (electron, typescript, @types/node); chamadas HTTP com `fetch` nativo. |
 | T10 | Persistência indesejada | Inicialização com o Windows é **opt-in** (menu da bandeja, desligado por padrão). |
-| T12 | Adulteração do app instalado | Fuses: `RunAsNode`/`NODE_OPTIONS`/`--inspect` desligados, validação de integridade do asar e `OnlyLoadAppFromAsar` ligados (ver ADR-011). **Limitações:** binários ainda **não assinados** (D-3) e `GrantFileProtocolExtraPrivileges` ligado por exigência do `file://` (S-4 elimina). |
+| T12 | Adulteração do app instalado | Fuses: `RunAsNode`/`NODE_OPTIONS`/`--inspect` desligados, validação de integridade do asar e `OnlyLoadAppFromAsar` ligados (ver ADR-011). `GrantFileProtocolExtraPrivileges` **desligado** (a UI vem de `app://`, ADR-012). **Limitação:** binários ainda **não assinados** (D-3). |
+| T14 | Servidor de UI (`app://`) servindo algo indevido / path traversal | Lista fechada de 3 arquivos (`resolveAppRequest`), 404 para o resto; testado com `..`, `%2e%2e`, `\`, outros hosts/portas/esquemas; só o main lê arquivos (via `fs`), o renderer não acessa `file://`. |
 | T13 | Dependências de build | electron-builder só como devDependency; baixa Electron/NSIS do GitHub com verificação própria. Rode builds em máquina confiável. |
 | T11 | Instância duplicada / atalho sequestrado | `requestSingleInstanceLock`; falha ao registrar atalho avisa o usuário. |
 

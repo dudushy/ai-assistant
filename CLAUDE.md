@@ -28,35 +28,39 @@ npm run typecheck                # só checa tipos
 npm test                         # build + node --test dist/**/*.test.js
 npm start                        # build + abre o app
 npm run dev                      # idem, com DevTools habilitado (--dev)
+npm run smoke                    # build + teste de ponta a ponta (página, preload, IPC, CSP) via DevTools Protocol
 npm run pack                     # empacota só a pasta release/win-unpacked (teste rápido)
 npm run dist                     # instalador NSIS + portátil em release/ (ver DEVELOPMENT.md → Empacotamento)
 node scripts/make-icon.mjs       # regenera assets/icon.png
 ```
-Smoke test sem piscar a tela: `timeout 8 node_modules/electron/dist/electron.exe . --hidden` (procure erros/warnings; os
-de "Network service/GPU process" aparecem só porque o `timeout` mata o processo).
+Smoke test sem piscar a tela: `npm run smoke` (ou `node scripts/smoke.mjs <exe> [args]`, que roda com `--hidden`, conecta no
+DevTools Protocol e confere app://, preload, IPC, CSP e bloqueio de `file://`; sai com código ≠ 0 se algo falhar).
 
 ## Mapa do código (detalhes em `docs/ARCHITECTURE.md`)
 ```
 src/shared/     tipos + contrato de IPC (sem Node/Electron; usado por todos)
 src/main/       processo principal: main.ts (ciclo de vida, atalho, bandeja), window.ts, ipc.ts,
-                settings.ts (config + chaves cifradas), platform.ts (única ponte para APIs do SO/Electron)
+                settings.ts (config + chaves cifradas), platform.ts (única ponte para APIs do SO/Electron),
+                appUrl.ts (puro: lista de arquivos servidos em app://) + protocol.ts (registra/serve o app://)
   ai/           provider.ts (interface+HTTP), providers/* (4 adapters), registry.ts, agent.ts (loop de tools)
   tools/        types.ts (Tool/Platform/Context), builtin.ts (ferramentas)
 src/preload/    preload.ts — contextBridge; roda em sandbox ⇒ NÃO pode importar módulos locais em runtime
 src/renderer/   index.html, styles.css, renderer.ts (módulo ES, sem imports em runtime)
-scripts/        copy-static.mjs, make-icon.mjs
+scripts/        copy-static.mjs, make-icon.mjs, smoke.mjs (teste ponta a ponta via DevTools Protocol)
 docs/           documentação (ver índice abaixo)
 ```
 
 ## Armadilhas já encontradas (não repita)
 - **Preload em sandbox** só pode `require('electron')`. Importe de `shared/` apenas `import type`. Nomes de canais IPC são literais, checados por tipo contra `IpcInvoke`/`IpcEvents`.
-- **Renderer** é `type="module"` carregado via `file://` sob CSP `script-src 'self'`; imports de `shared/` devem ser `import type` (apagados na compilação). Qualquer dado de `shared/` necessário em runtime deve vir por IPC (ex.: `PublicSettings.providers`).
+- **Renderer** é `type="module"` carregado via `app://ui/` sob CSP `script-src 'self'`; imports de `shared/` devem ser `import type` (apagados na compilação). Qualquer dado de `shared/` necessário em runtime deve vir por IPC (ex.: `PublicSettings.providers`).
 - **`safeStorage`**: use as variantes `*Async` + `isAsyncEncryptionAvailable()` (as síncronas estão depreciadas no Electron 45). A disponibilidade é cacheada em `electronCodec.init()`, chamado antes de criar o `SettingsStore`.
 - **Binário do Electron** não é baixado pelo `npm install` neste ambiente: rode `node node_modules/electron/install.js`.
 - **Gemini** rejeita `OBJECT` com `properties` vazio ⇒ ferramentas sem parâmetros omitem `parameters` (ver `toGeminiTools`).
 - **Gemini/Anthropic** exigem que resultados de várias tools de uma mesma rodada fiquem no **mesmo turno** do usuário (já tratado nos conversores; há testes).
 - **Heredocs longos no Bash tool** quebraram por aspas; prefira a ferramenta Write para criar arquivos de código.
-- **Empacotado, o fuse `GrantFileProtocolExtraPrivileges` precisa estar ON** (ADR-011) ou a UI não carrega (`ERR_FILE_NOT_FOUND`). Após mudar `build.electronFuses`, rode o smoke test em `release/win-unpacked`.
+- **A UI é servida por `app://ui/…`, não por `file://`** (ADR-012). Qualquer arquivo novo de UI (ex.: imagem, segundo `.js`) precisa entrar na lista `ASSETS` de `src/main/appUrl.ts` **e** em `scripts/copy-static.mjs` (se for estático), senão dá 404. Com o fuse `GrantFileProtocolExtraPrivileges` desligado, um `loadFile`/`file://` não funciona empacotado — não volte a usá-lo.
+- `registerAppScheme()` precisa rodar **antes** de `app.whenReady()`; `serveApp()` depois, antes de criar a janela.
+- **Após mudar `build.electronFuses`, UI ou protocolo:** `npm run pack` e `node scripts/smoke.mjs "release/win-unpacked/AI Assistant.exe"` (precisa dar "OK").
 - **Nomes de artefatos** de `nsis` e `portable` precisam ser diferentes, senão um sobrescreve o outro.
 - O `npm install` do electron-builder avisa sobre scripts de instalação (`electron-winstaller`); são desnecessários (não usamos Squirrel).
 - Ao cortar histórico de conversa, corte **sempre num turno `user`** (`trimHistory`) para não deixar `tool` órfão.

@@ -6,6 +6,7 @@
 │ main (Node)                                                  │
 │  main.ts ─ ciclo de vida, atalho global, bandeja             │
 │  window.ts ─ BrowserWindow sem moldura, sempre no topo       │
+│  protocol.ts + appUrl.ts ─ serve a UI em app://ui/ (ADR-012) │
 │  ipc.ts ──── handlers + Agent + confirmações                 │
 │  settings.ts ─ SettingsStore (JSON + chaves cifradas)        │
 │  platform.ts ─ ÚNICA ponte para shell/clipboard/Notification │
@@ -64,6 +65,11 @@ formato do provedor com funções **puras e testadas** (`toXMessages`, `toXTools
 
 `Platform` (`tools/types.ts`) abstrai o SO (`openExternal`, `notify`, `writeClipboard`, `lockWorkStation`, `launch`);
 produção = `platform.ts` (Electron), testes = fake. Ferramentas **nunca** importam `electron` diretamente.
+
+## UI servida por `app://` (ADR-012)
+`protocol.ts` registra o esquema `app` (standard+secure, antes do `ready`) e responde `app://ui/index.html|renderer.js|styles.css` a partir de
+`dist/renderer` (lista fechada em `appUrl.ts`; resto = 404). Cabeçalhos: CSP, `nosniff`, `no-store`. A janela faz `loadURL(RENDERER_URL)` e o IPC só
+aceita chamadas cujo `senderFrame.url` seja exatamente essa URL. Não existe nenhum acesso a `file://` pela UI.
 
 ## Janela
 Sem moldura, transparente, `alwaysOnTop('screen-saver')`, fora da barra de tarefas, centralizada no topo do monitor do

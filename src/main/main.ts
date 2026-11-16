@@ -2,10 +2,14 @@ import path from 'node:path';
 import { type BrowserWindow, Menu, Notification, Tray, app, globalShortcut, nativeImage } from 'electron';
 import { registerIpc } from './ipc';
 import { electronCodec, electronPlatform } from './platform';
+import { registerAppScheme, serveApp } from './protocol';
 import { DEFAULT_SHORTCUT, SettingsStore } from './settings';
 import { createMainWindow, showWindow, toggleWindow } from './window';
 
 const DEV = process.argv.includes('--dev');
+
+// a UI é servida por app://ui/ (ADR-012); o esquema precisa ser registrado antes do app ficar pronto
+registerAppScheme();
 
 // uma única instância: abrir de novo apenas mostra a barra
 if (!app.requestSingleInstanceLock()) {
@@ -24,6 +28,7 @@ if (!app.requestSingleInstanceLock()) {
 
   void app.whenReady().then(async () => {
     await electronCodec.init();
+    serveApp();
     const store = new SettingsStore(path.join(app.getPath('userData'), 'settings.json'), electronCodec);
 
     win = createMainWindow({ devTools: DEV, shouldHideOnBlur: () => store.getPublic().hideOnBlur });
