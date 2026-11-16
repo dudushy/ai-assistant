@@ -23,6 +23,12 @@ npm start
 
 Atalhos: `Ctrl+Alt+Space` mostra/oculta · `Esc` oculta · ícone da bandeja para menu (iniciar com o Windows, sair).
 
+## Gerar o instalador
+```bash
+npm run dist   # cria release/AI Assistant-Setup-*.exe e release/AI Assistant-Portable-*.exe
+```
+Os binários ainda não são assinados: o SmartScreen pode avisar na primeira execução.
+
 ## Desenvolvimento
 ```bash
 npm test        # compila e roda os testes

@@ -41,5 +41,19 @@ Formato: **ID — título** · status · contexto · decisão · consequências.
 ## ADR-009 — Testes com `node:test` sobre `dist/` · aceita
 - **Decisão:** sem Jest/Vitest (zero deps). `npm test` compila e roda `node --test "dist/**/*.test.js"`. Código testável não importa `electron`.
 
+## ADR-011 — Empacotamento com electron-builder (NSIS + portátil) · aceita
+- **Contexto:** precisamos distribuir um `.exe`. Alternativas: `@electron/packager` (só pasta) ou electron-builder (instalador + portátil).
+- **Decisão:** `electron-builder` como **devDependency** (nunca vai no pacote). Alvos `nsis` (instalador por usuário, com escolha de pasta) e `portable`,
+  ambos x64; nomes distintos (`…-Setup-…` e `…-Portable-…`) — com o mesmo nome um sobrescreve o outro. Saída em `release/` (ignorada pelo git).
+  Só `dist/**`, `assets/icon.png` e `package.json` entram no `app.asar` (sem `src/`, testes, sourcemaps nem node_modules).
+- **Fuses do Electron** (aplicados no build): `RunAsNode` off, `EnableNodeOptionsEnvironmentVariable` off, `EnableNodeCliInspectArguments` off,
+  `EnableEmbeddedAsarIntegrityValidation` on, `OnlyLoadAppFromAsar` on, `EnableCookieEncryption` on.
+- **Exceção consciente — `GrantFileProtocolExtraPrivileges` = on:** com ele desligado, a UI **não carrega** do `file://` dentro do asar
+  (`ERR_FILE_NOT_FOUND`; reproduzido e confirmado ligando só esse fuse). Mitigações: o app só carrega a própria página local, CSP estrita,
+  navegação/`window.open` bloqueados, nenhuma URL remota. **Solução definitiva:** servir a UI por protocolo customizado (`app://`) e desligar o fuse (ROADMAP S-4).
+- **Consequências:** instalador ≈ 113 MB, portátil ≈ 103 MB (Chromium). Sem certificado de assinatura ⇒ o SmartScreen avisará "editor desconhecido" (ROADMAP D-3).
+  Requer rede no primeiro build (baixa Electron, NSIS e 7zip do GitHub — verificados pelo electron-builder).
+- **Efeito colateral:** `productName` = "AI Assistant" ⇒ pasta de dados `%APPDATA%\AI Assistant` (igual em dev e empacotado).
+
 ## ADR-010 — Atalho global padrão `Control+Alt+Space` · aceita
 - **Contexto:** `Alt+Space` abre o menu de sistema do Windows; `Ctrl+Space` conflita com IME. Configurável; fallback ao padrão e aviso se falhar.

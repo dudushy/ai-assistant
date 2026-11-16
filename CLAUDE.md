@@ -13,7 +13,7 @@ tela (atalho global), conversa com um LLM (Ollama local, Groq, Gemini ou Anthrop
    - Chaves de API só existem em texto puro na memória do processo *main*; no disco, apenas cifradas (`safeStorage`).
    - O renderer nunca recebe chaves. Renderer usa só `textContent` (nunca `innerHTML`).
    - Ferramentas: lista fechada, sem shell, argumentos validados. Ação sensível ⇒ `needsConfirm`.
-3. **Dependências mínimas.** Hoje só há devDependencies (`electron`, `typescript`, `@types/node`); as chamadas às APIs de IA usam `fetch` nativo. Adicionar dependência exige justificativa em `docs/DECISIONS.md`.
+3. **Dependências mínimas.** Hoje só há devDependencies (`electron`, `electron-builder`, `typescript`, `@types/node`); as chamadas às APIs de IA usam `fetch` nativo. Adicionar dependência exige justificativa em `docs/DECISIONS.md`.
 4. **Sem bundler.** `tsc` compila tudo para `dist/`; HTML/CSS são copiados por `scripts/copy-static.mjs`.
 5. **Testes acompanham o código.** Lógica nova em `src/main` precisa de `*.test.ts` ao lado. `npm test` deve passar antes de todo commit.
 6. **Documentação viva.** Ao fim de cada sessão/tarefa: atualizar `docs/PROGRESS.md` (estado + próximos passos) e, se mudou
@@ -28,6 +28,8 @@ npm run typecheck                # só checa tipos
 npm test                         # build + node --test dist/**/*.test.js
 npm start                        # build + abre o app
 npm run dev                      # idem, com DevTools habilitado (--dev)
+npm run pack                     # empacota só a pasta release/win-unpacked (teste rápido)
+npm run dist                     # instalador NSIS + portátil em release/ (ver DEVELOPMENT.md → Empacotamento)
 node scripts/make-icon.mjs       # regenera assets/icon.png
 ```
 Smoke test sem piscar a tela: `timeout 8 node_modules/electron/dist/electron.exe . --hidden` (procure erros/warnings; os
@@ -54,6 +56,9 @@ docs/           documentação (ver índice abaixo)
 - **Gemini** rejeita `OBJECT` com `properties` vazio ⇒ ferramentas sem parâmetros omitem `parameters` (ver `toGeminiTools`).
 - **Gemini/Anthropic** exigem que resultados de várias tools de uma mesma rodada fiquem no **mesmo turno** do usuário (já tratado nos conversores; há testes).
 - **Heredocs longos no Bash tool** quebraram por aspas; prefira a ferramenta Write para criar arquivos de código.
+- **Empacotado, o fuse `GrantFileProtocolExtraPrivileges` precisa estar ON** (ADR-011) ou a UI não carrega (`ERR_FILE_NOT_FOUND`). Após mudar `build.electronFuses`, rode o smoke test em `release/win-unpacked`.
+- **Nomes de artefatos** de `nsis` e `portable` precisam ser diferentes, senão um sobrescreve o outro.
+- O `npm install` do electron-builder avisa sobre scripts de instalação (`electron-winstaller`); são desnecessários (não usamos Squirrel).
 - Ao cortar histórico de conversa, corte **sempre num turno `user`** (`trimHistory`) para não deixar `tool` órfão.
 
 ## Convenções

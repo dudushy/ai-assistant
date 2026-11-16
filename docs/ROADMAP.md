@@ -11,7 +11,10 @@ Legenda: ✅ feito · 🔜 próximo · 💡 ideia. Prioridade P0 (crítico) → 
 
 ## Próximo (v0.2) — qualidade e distribuição
 - 🔜 **D-1 (P0)** Validação manual completa no Windows (checklist em DEVELOPMENT.md) com chaves reais e com Ollama.
-- 🔜 **D-2 (P0)** Empacotamento (electron-builder ou electron-packager): instalador/portátil, ícone .ico, corrigir caminho do `assets/icon.png`, assinatura de código.
+- ✅ **D-2** Empacotamento: instalador NSIS + portátil, ícone .ico, fuses (ADR-011). Falta apenas validar a instalação real (ver D-1).
+- 🔜 **D-3 (P1)** Assinatura de código (certificado) para evitar o aviso do SmartScreen; hoje os binários são não assinados.
+- 🔜 **D-4 (P2)** Atualização automática (electron-updater) — exige assinatura (D-3) e um canal de releases confiável com verificação de assinatura/hash.
+- 🔜 **D-5 (P2)** Publicar releases no GitHub (CI com `windows-latest`, anexando Setup/Portable e SHA-256).
 - 🔜 **F-1 (P1)** Renderização de Markdown seguro nas respostas (sem `innerHTML`: construir nós DOM).
 - 🔜 **F-2 (P1)** Histórico de conversas persistente (opt-in) + comando para apagar.
 - 🔜 **F-3 (P2)** Streaming de respostas (revisar ADR-006).
@@ -21,6 +24,7 @@ Legenda: ✅ feito · 🔜 próximo · 💡 ideia. Prioridade P0 (crítico) → 
 - 🔜 **T-2 (P3)** CI (GitHub Actions: `npm ci && npm test` em windows-latest).
 
 ## Segurança futura
+- 🔜 **S-4 (P1)** Servir a UI por protocolo customizado (`app://`) e desligar o fuse `GrantFileProtocolExtraPrivileges` (ADR-011).
 - 💡 **S-1 (P1)** "Sessão contaminada": após ler conteúdo externo, bloquear ferramentas sensíveis até nova confirmação (T1).
 - 💡 **S-2 (P2)** Log de auditoria local das ações executadas (somente nome da ferramenta + resultado, sem segredos).
 - 💡 **S-3 (P2)** Política por ferramenta (sempre perguntar / permitir / bloquear) configurável.

@@ -57,7 +57,10 @@ if (!app.requestSingleInstanceLock()) {
     });
     applyShortcut();
 
-    const icon = nativeImage.createFromPath(path.join(__dirname, '..', '..', 'assets', 'icon.png'));
+    // dentro do app.asar o caminho relativo continua válido (assets/icon.png é incluído no pacote)
+    const icon = nativeImage
+      .createFromPath(path.join(__dirname, '..', '..', 'assets', 'icon.png'))
+      .resize({ width: 24, height: 24 });
     tray = new Tray(icon);
     tray.setToolTip('AI Assistant');
     const buildMenu = () =>

@@ -9,7 +9,7 @@ npm test                                 # deve terminar com 32+ testes passando
 npm run dev                              # abre o app com DevTools
 ```
 Requisitos: Node ≥ 22, Windows 10/11 (as ações de SO são Windows; o resto compila em qualquer SO).
-Dados do app: `%APPDATA%\ai-assistant\settings.json` (o nome vem do `name` do package.json).
+Dados do app: `%APPDATA%\AI Assistant\settings.json` (o nome vem do `productName` do package.json; igual em dev e empacotado).
 
 ## Como adicionar um provedor de IA
 1. `src/shared/types.ts`: adicionar o id em `PROVIDER_IDS` e a entrada em `PROVIDERS` (label, needsKey, defaultModel).
@@ -50,10 +50,27 @@ Dados do app: `%APPDATA%\ai-assistant\settings.json` (o nome vem do `name` do pa
 ## Smoke test automatizável
 `timeout 8 node_modules/electron/dist/electron.exe . --hidden` — não deve imprimir erros além dos de GPU/Network causados pelo kill.
 
-## Empacotamento (pendente — D-2)
-Pontos de atenção: `main` aponta para `dist/main/main.js`; `assets/icon.png` é lido por caminho relativo a `__dirname`
-(ajustar para `process.resourcesPath` quando empacotado); incluir `dist/` e `assets/`, excluir `src/` e testes; ícone `.ico`;
-assinatura de código; desabilitar fuses inseguros do Electron (`RunAsNode`, `EnableNodeOptionsEnvironmentVariable`).
+## Empacotamento (feito — ADR-011)
+```bash
+npm run pack     # só a pasta release/win-unpacked (rápido, bom para testar)
+npm run dist     # instalador + portátil em release/
+```
+Saídas (pasta `release/`, ignorada pelo git):
+- `AI Assistant-Setup-<versão>-x64.exe` — instalador NSIS (por usuário, escolhe a pasta, cria atalhos, desinstalador).
+- `AI Assistant-Portable-<versão>-x64.exe` — executável único, sem instalar.
+- `latest.yml` / `.blockmap` — metadados de auto-update (ainda não usados; D-4).
+
+Configuração: bloco `"build"` do `package.json`. Ícones gerados por `node scripts/make-icon.mjs` (`assets/icon.png` 256 px e `icon.ico`).
+O ícone da bandeja é lido de `assets/icon.png` por caminho relativo a `__dirname` — funciona dentro do asar porque `assets/icon.png` entra no pacote.
+Requer internet no 1º build (baixa Electron, NSIS e 7zip). Build completo: ~2–4 min.
+
+**Verificação pós-build (faça sempre):**
+1. `node node_modules/@electron/asar/bin/asar.js list release/win-unpacked/resources/app.asar` — deve conter só `dist/`, `assets/icon.png`, `package.json` (sem `.map`, testes, `src/`).
+2. `node node_modules/@electron/fuses/dist/bin.js read --app "release/win-unpacked/AI Assistant.exe"` — conferir os fuses do ADR-011.
+3. `timeout 8 "release/win-unpacked/AI Assistant.exe" --hidden` — não pode imprimir `Failed to load URL`.
+4. Rodar o checklist manual acima com o **portátil** e com uma instalação real do **instalador** (desinstalar depois).
+
+Não assinado: o SmartScreen mostrará "Windows protegeu o computador" → *Mais informações → Executar assim mesmo* (D-3 resolve).
 
 ## Dicas de ambiente (Windows + Claude Code CLI)
 - Prefira a ferramenta Write a heredocs longos no Bash.

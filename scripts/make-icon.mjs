@@ -1,10 +1,10 @@
-// Gera assets/icon.png (32x32, círculo com gradiente) sem dependências. Rode: node scripts/make-icon.mjs
+// Gera assets/icon.png e assets/icon.ico (256x256, círculo com gradiente) sem dependências. Rode: node scripts/make-icon.mjs
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { deflateSync } from 'node:zlib';
 
-const N = 32;
+const N = 256;
 const raw = Buffer.alloc((N * 4 + 1) * N);
 for (let y = 0; y < N; y++) {
   raw[y * (N * 4 + 1)] = 0; // filtro "none"
@@ -51,4 +51,14 @@ const png = Buffer.concat([
 const out = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets');
 mkdirSync(out, { recursive: true });
 writeFileSync(join(out, 'icon.png'), png);
-console.log('assets/icon.png gerado', png.length, 'bytes');
+
+// ICO com o PNG embutido (formato aceito desde o Windows Vista); largura/altura 0 = 256
+const dir = Buffer.alloc(22);
+dir.writeUInt16LE(1, 2); // tipo: ícone
+dir.writeUInt16LE(1, 4); // quantidade de imagens
+dir.writeUInt16LE(1, 10); // planos
+dir.writeUInt16LE(32, 12); // bits por pixel
+dir.writeUInt32LE(png.length, 14); // tamanho dos dados
+dir.writeUInt32LE(22, 18); // deslocamento dos dados
+writeFileSync(join(out, 'icon.ico'), Buffer.concat([dir, png]));
+console.log('assets/icon.png e icon.ico gerados', png.length, 'bytes');

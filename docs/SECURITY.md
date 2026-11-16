@@ -19,6 +19,8 @@ Este documento fixa o modelo de ameaças e os controles. **Leia antes de adicion
 | T8 | Loop infinito de tools / custo | `MAX_STEPS = 6`; timeouts de rede (90 s; Ollama 180 s); cancelamento via `AbortSignal`. |
 | T9 | Supply chain | Zero dependências de runtime; só devDependencies (electron, typescript, @types/node); chamadas HTTP com `fetch` nativo. |
 | T10 | Persistência indesejada | Inicialização com o Windows é **opt-in** (menu da bandeja, desligado por padrão). |
+| T12 | Adulteração do app instalado | Fuses: `RunAsNode`/`NODE_OPTIONS`/`--inspect` desligados, validação de integridade do asar e `OnlyLoadAppFromAsar` ligados (ver ADR-011). **Limitações:** binários ainda **não assinados** (D-3) e `GrantFileProtocolExtraPrivileges` ligado por exigência do `file://` (S-4 elimina). |
+| T13 | Dependências de build | electron-builder só como devDependency; baixa Electron/NSIS do GitHub com verificação própria. Rode builds em máquina confiável. |
 | T11 | Instância duplicada / atalho sequestrado | `requestSingleInstanceLock`; falha ao registrar atalho avisa o usuário. |
 
 ## Checklist para QUALQUER nova ferramenta
